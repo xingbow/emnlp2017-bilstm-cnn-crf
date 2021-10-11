@@ -10,10 +10,6 @@ from util.data import parse_doc
 from util.data import extract_arguments
 from util.data import extract_entities
 
-test_sens = """We should abandon Youtube. Toolassisted speedruns uploaded to video sites like Nico Nico Douga, YouTube or 
-TASVideos may be described as a new world record by TASsan , who is said to have the superhuman memory and reflexes
-"""
-
 def do_label_arg(marks):
     # print("marks:" + str(marks))
     marks_new = []
@@ -52,40 +48,48 @@ def do_label_arg(marks):
             if marks[i]['type'][0] == "P" or marks[i]['type'][0] == "C":
                 mark['end'] = marks[i]['end']
                 marks_new.append(mark)
+        ### DEBUG
+        elif i > 0 and i + 1 == len(marks):
+            # print("i, mark, len(mark): ", i, mark, len(marks), marks[i])
+            # End Label
+            if marks[i]['type'][0] == "P" or marks[i]['type'][0] == "C":
+                mark['end'] = marks[i]['end']
+                marks_new.append(mark)
     return marks_new
 
 
 """Models"""
 
 from Model import Model
-
-
 modelIBM = Model("IBM.h5")
 
 
+def label_sentences(input_str):
+    # aggregate word labels into sentences
+    doc = modelIBM.label_with_probs(input_str)
+    text= input_str
+    currentPos = 0
+    data = [] 
+
+    for sentence in doc:
+        for token in sentence:
+            start = text.find(token["token"], currentPos)
+            end = start + len(token["token"])
+            print(token["label"], start, end)
+            currentPos = end
+            currentWord = {}
+            currentWord['start'] = start
+            currentWord['end'] = end
+            currentWord['type'] = token["label"]
+            data.append(currentWord)
+    data = do_label_arg(data)
+    return data
 
 
-print(modelIBM.label(test_sens))
+if __name__ == '__main__':
+    test_sens = """We should abandon Youtube. Toolassisted speedruns uploaded to video sites like Nico Nico Douga, YouTube or 
+    TASVideos may be described as a new world record by TASsan , who is said to have the superhuman memory and reflexes
+    """
+    labels = label_sentences(test_sens)
+    print("sentence labels: ", json.dumps(labels, indent=2))
 
-print("*" *10)
-
-doc = modelIBM.label_with_probs(test_sens)
-print("test results: ", doc)
-
-text= test_sens
-
-currentPos = 0
-data = []
-for sentence in doc:
-    for token in sentence:
-        start = text.find(token["token"], currentPos)
-        end = start + len(token["token"])
-        currentPos = end
-        currentWord = {}
-        currentWord['start'] = start
-        currentWord['end'] = end
-        currentWord['type'] = token["label"]
-        data.append(currentWord)
-
-data = do_label_arg(data)
-print("data: ", data)
