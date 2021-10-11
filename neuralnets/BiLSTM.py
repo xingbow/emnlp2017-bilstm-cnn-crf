@@ -419,7 +419,7 @@ class BiLSTM:
                     self.resultsSavePath.write("\n")
                     self.resultsSavePath.flush()
                 
-                logging.info("\nScores from epoch with best dev-scores:\n  Dev-Score: %.4f\n  Test-Score %.4f" % (max_dev_score[modelName], max_test_score[modelName]))
+                logging.info("Max: %.4f dev; %.4f test" % (max_dev_score[modelName], max_test_score[modelName]))
                 logging.info("")
                 
             logging.info("%.2f sec for evaluation" % (time.time() - start_time))
@@ -450,7 +450,32 @@ class BiLSTM:
             labels[modelName] = [[idx2Label[tag] for tag in tagSentence] for tagSentence in predLabels]
 
         return labels
-            
+
+    def tagSentences_with_probs(self, sentences):
+        # Pad characters
+
+        if 'characters' in self.params['featureNames']:
+            self.padCharacters(sentences)
+
+        labels = {}
+        probs = {}
+        for modelName, model in self.models.items():
+            paddedPredLabels, probabilities = self.predictLabels_with_probs(model, sentences)
+            predLabels = []
+            for idx in range(len(sentences)):
+                unpaddedPredLabels = []
+                for tokenIdx in range(len(sentences[idx]['tokens'])):
+                    if sentences[idx]['tokens'][tokenIdx] != 0:  # Skip padding tokens
+                        unpaddedPredLabels.append(paddedPredLabels[idx][tokenIdx])
+
+                predLabels.append(unpaddedPredLabels)
+
+            idx2Label = self.idx2Labels[modelName]
+
+            labels[modelName] = [[idx2Label[tag] for tag in tagSentence] for tagSentence in predLabels]
+            probs[modelName] = [[str(tag) for tag in tagSentence] for tagSentence in probabilities]
+
+        return labels, probs
     
     def getSentenceLengths(self, sentences):
         sentenceLengths = {}
@@ -483,7 +508,29 @@ class BiLSTM:
         
         return predLabels
     
-   
+    def predictLabels_with_probs(self, model, sentences):
+        predLabels = [None] * len(sentences)
+        probs = [None] * len(sentences)
+        sentenceLengths = self.getSentenceLengths(sentences)
+
+        for indices in sentenceLengths.values():
+            nnInput = []
+            for featureName in self.params['featureNames']:
+                inputData = np.asarray([sentences[idx][featureName] for idx in indices])
+                nnInput.append(inputData)
+            np.set_printoptions(suppress=True)
+            predictions = model.predict(nnInput, verbose=False)
+            confidence_scores = np.max(predictions, axis=-1)
+            predictions = predictions.argmax(axis=-1)  # Predict classes
+
+            predIdx = 0
+            for idx in indices:
+                predLabels[idx] = predictions[predIdx]
+                probs[idx] = confidence_scores[predIdx]
+                predIdx += 1
+
+        return predLabels, probs
+
     def computeScore(self, modelName, devMatrix, testMatrix):
         if self.labelKeys[modelName].endswith('_BIO') or self.labelKeys[modelName].endswith('_IOBES') or self.labelKeys[modelName].endswith('_IOB'):
             return self.computeF1Scores(modelName, devMatrix, testMatrix)

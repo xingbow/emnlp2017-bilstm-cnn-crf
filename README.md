@@ -1,3 +1,6 @@
+# TARGER Project + BiLSTM-CNN-CRF Implementation for Sequence Tagging
+Refactor code from [**TARGER**](https://github.com/uhh-lt/targer) and [**BiLSTM-CNN-CRF**](https://github.com/UKPLab/emnlp2017-bilstm-cnn-crf)
+
 # BiLSTM-CNN-CRF Implementation for Sequence Tagging
 
 This repository contains a BiLSTM-CRF implementation that used for NLP Sequence Tagging (for example POS-tagging, Chunking, or Named Entity Recognition). The implementation is based on Keras 2.2.0 and can be run with Tensorflow 1.8.0 as backend. It was optimized for Python 3.5 / 3.6. It does **not work** with Python 2.7.
