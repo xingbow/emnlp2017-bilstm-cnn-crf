@@ -10,6 +10,10 @@ Example usage (in `run_ibm.py`):
     - **input**: sentences (`str`)
     - **output** (in sentences): ```[{type: claim/premise, start: index, end: index}, ...]```
 
+Environment setup
+- Python 3.6
+- Anconda environment config file: `argument_env.yml`
+
 
 # BiLSTM-CNN-CRF Implementation for Sequence Tagging
 
